@@ -27,7 +27,9 @@
                     animation: {
                         'fade-in': 'fadeIn 0.5s ease-in-out',
                         'slide-up': 'slideUp 0.5s ease-out',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                        'bounce-slow': 'bounce 2s infinite'
                     },
                     keyframes: {
                         fadeIn: {
@@ -122,7 +124,25 @@
     <!-- 文章列表 -->
     <section class="py-16 bg-white">
         <div class="container mx-auto px-4">
-            <div id="article-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            <!-- 加载状态 -->
+            <div id="loading-state" class="col-span-full text-center py-20">
+                <div class="inline-block p-4 rounded-full bg-primary/10 mb-4">
+                    <i class="fa fa-pencil-square-o text-3xl text-primary animate-spin-slow"></i>
+                </div>
+                <p class="text-gray-600 text-lg">正在加载杂谈文章...</p>
+                <p class="text-gray-400 mt-2">每一篇都是用心的记录</p>
+            </div>
+            
+            <!-- 无数据状态 -->
+            <div id="empty-state" class="col-span-full text-center py-20 hidden">
+                <div class="inline-block p-4 rounded-full bg-gray-100 mb-4">
+                    <i class="fa fa-file-text-o text-3xl text-gray-400"></i>
+                </div>
+                <p class="text-gray-600 text-lg">暂无杂谈文章</p>
+                <p class="text-gray-400 mt-2">更多内容正在创作中，敬请期待</p>
+            </div>
+            
+            <div id="article-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 hidden"></div>
             <div class="mt-12 flex justify-center space-x-2" id="pagination"></div>
         </div>
     </section>
@@ -205,8 +225,13 @@
 
   <!-- 自定义模态框 -->
     <div id="fullContentModal" class="fixed inset-0 bg-black/50 z-50 hidden justify-center items-center">
-        <div class="bg-white rounded-lg shadow-lg max-w-4xl w-11/12 p-6 relative mx-auto my-8">
-            <h3 id="modalTitle" class="text-xl font-semibold mb-4 text-primary"></h3>
+        <div class="bg-white rounded-lg shadow-lg max-w-4xl w-11/12 p-6 relative mx-auto my-8 transform transition-all duration-300 opacity-0 scale-95" id="modal-container">
+            <!-- 阅读进度条 -->
+            <div id="reading-progress" class="absolute top-0 left-0 right-0 h-1 bg-primary/30">
+                <div id="progress-bar" class="h-full bg-primary w-0 transition-all duration-100"></div>
+            </div>
+            
+            <h3 id="modalTitle" class="text-xl font-semibold mb-4 text-primary mt-2"></h3>
             <div id="modalContent" class="text-gray-600 mb-6 max-h-[70vh] overflow-y-auto whitespace-pre-wrap leading-relaxed"></div>
             <button id="modalClose" class="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors duration-300">关闭</button>
         </div>
@@ -217,6 +242,7 @@
         const ITEMS_PER_PAGE = 6; // 每页显示6篇
         let currentPage = 1; // 当前页
         let articles = []; // 存储所有文章数据的数组
+        let modalContentElement; // 模态框内容元素
 
         // 渲染当前页文章
         function renderArticles(page) {
@@ -227,23 +253,30 @@
             const end = start + ITEMS_PER_PAGE;
             const currentArticles = articles.slice(start, end); // 获取当前页文章
             
-            // 渲染当前页文章
-            currentArticles.forEach(article => {
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-lg shadow-md p-6 transition-transform-opacity hover:transform hover:translate-y-2 animate-fade-in';
-                
-                // 使用data属性存储文章内容和标题，避免特殊字符问题
-                card.innerHTML = `
-                    <h3 class="text-xl font-semibold mb-2 text-primary">${article.title}</h3>
-                    <p class="text-sm text-gray-500 mb-4">作者：${article.author} | 时期：${article.period}</p>
-                    <p class="text-gray-600 mb-4">${article.preview}</p>
-                    <button class="read-full-btn text-secondary hover:text-primary transition-colors duration-300"
-                            data-content="${encodeURIComponent(article.content)}"
-                            data-title="${encodeURIComponent(article.title)}">
-                        阅读全文
-                    </button>
-                `;
-                articleList.appendChild(card);
+            // 渲染当前页文章（带渐入动画）
+            currentArticles.forEach((article, index) => {
+                setTimeout(() => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 opacity-0 translate-y-4';
+                    
+                    // 使用data属性存储文章内容和标题，避免特殊字符问题
+                    card.innerHTML = `
+                        <h3 class="text-xl font-semibold mb-2 text-primary">${article.title}</h3>
+                        <p class="text-sm text-gray-500 mb-4">作者：${article.author} | 时期：${article.period}</p>
+                        <p class="text-gray-600 mb-4">${article.preview}</p>
+                        <button class="read-full-btn text-secondary hover:text-primary transition-colors duration-300"
+                                data-content="${encodeURIComponent(article.content)}"
+                                data-title="${encodeURIComponent(article.title)}">
+                            阅读全文
+                        </button>
+                    `;
+                    articleList.appendChild(card);
+                    
+                    // 触发动画
+                    setTimeout(() => {
+                        card.classList.remove('opacity-0', 'translate-y-4');
+                    }, 50);
+                }, index * 100); // 每个卡片延迟100ms出现
             });
         }
 
@@ -257,13 +290,14 @@
 
             // 上一页按钮
             const prevBtn = document.createElement('button');
-            prevBtn.className = `px-4 py-2 rounded border ${currentPage > 1 ? 'border-primary text-primary hover:bg-primary hover:text-white' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`;
+            prevBtn.className = `px-4 py-2 rounded border transition-all ${currentPage > 1 ? 'border-primary text-primary hover:bg-primary hover:text-white' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`;
             prevBtn.innerHTML = '<i class="fa fa-angle-left"></i>';
             prevBtn.onclick = () => {
                 if (currentPage > 1) {
                     currentPage--;
                     renderArticles(currentPage);
                     updatePagination();
+                    document.getElementById('article-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             };
             pagination.appendChild(prevBtn);
@@ -273,12 +307,13 @@
                 // 显示首尾页、当前页及前后页，其余用省略号代替
                 if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 1) {
                     const pageBtn = document.createElement('button');
-                    pageBtn.className = `px-4 py-2 rounded ${i === currentPage ? 'bg-primary text-white' : 'border border-gray-300 text-gray-600 hover:bg-primary hover:text-white hover:border-primary'}`;
+                    pageBtn.className = `px-4 py-2 rounded transition-all ${i === currentPage ? 'bg-primary text-white' : 'border border-gray-300 text-gray-600 hover:bg-primary hover:text-white hover:border-primary'}`;
                     pageBtn.textContent = i;
                     pageBtn.onclick = () => {
                         currentPage = i;
                         renderArticles(currentPage);
                         updatePagination();
+                        document.getElementById('article-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
                     };
                     pagination.appendChild(pageBtn);
                 } else if (i === 2 || i === totalPages - 1) {
@@ -292,13 +327,14 @@
 
             // 下一页按钮
             const nextBtn = document.createElement('button');
-            nextBtn.className = `px-4 py-2 rounded border ${currentPage < totalPages ? 'border-primary text-primary hover:bg-primary hover:text-white' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`;
+            nextBtn.className = `px-4 py-2 rounded border transition-all ${currentPage < totalPages ? 'border-primary text-primary hover:bg-primary hover:text-white' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`;
             nextBtn.innerHTML = '<i class="fa fa-angle-right"></i>';
             nextBtn.onclick = () => {
                 if (currentPage < totalPages) {
                     currentPage++;
                     renderArticles(currentPage);
                     updatePagination();
+                    document.getElementById('article-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             };
             pagination.appendChild(nextBtn);
@@ -309,7 +345,7 @@
             jumpContainer.innerHTML = `
                 <input type="number" id="pageInput" min="1" max="${totalPages}" value="${currentPage}" 
                     class="w-16 px-2 py-2 border border-gray-300 rounded mx-2">
-                <button onclick="jumpToPage(${totalPages})" class="px-3 py-2 bg-secondary text-white rounded hover:bg-secondary/90">跳转</button>
+                <button onclick="jumpToPage(${totalPages})" class="px-3 py-2 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors">跳转</button>
             `;
             pagination.appendChild(jumpContainer);
         }
@@ -322,47 +358,154 @@
                 currentPage = page;
                 renderArticles(currentPage);
                 updatePagination();
+                document.getElementById('article-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+        }
+
+        // 更新阅读进度
+        function updateReadingProgress() {
+            const scrollTop = modalContentElement.scrollTop;
+            const scrollHeight = modalContentElement.scrollHeight - modalContentElement.clientHeight;
+            const scrollPercent = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+            document.getElementById('progress-bar').style.width = `${scrollPercent}%`;
+        }
+
+        // 显示全文模态框
+        function showFullContent(content, title) {
+            const modal = document.getElementById('fullContentModal');
+            const modalContainer = document.getElementById('modal-container');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            // 存储模态框内容元素引用
+            modalContentElement = document.getElementById('modalContent');
+            
+            if (content && title) {
+                // 重置进度条
+                document.getElementById('progress-bar').style.width = '0%';
+                
+                // 设置内容
+                modalTitle.textContent = title;
+                modalContentElement.textContent = content;
+                
+                // 显示模态框并添加动画
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                
+                // 重置滚动位置
+                modalContentElement.scrollTop = 0;
+                
+                // 触发重排后添加动画类
+                setTimeout(() => {
+                    modalContainer.classList.remove('opacity-0', 'scale-95');
+                    modalContainer.classList.add('opacity-100', 'scale-100');
+                }, 10);
+                
+                // 添加滚动监听
+                modalContentElement.addEventListener('scroll', updateReadingProgress);
+            } else {
+                alert('无有效文章内容');
+            }
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            const modal = document.getElementById('fullContentModal');
+            const modalContainer = document.getElementById('modal-container');
+            
+            // 移除滚动监听
+            modalContentElement.removeEventListener('scroll', updateReadingProgress);
+            
+            // 添加关闭动画
+            modalContainer.classList.remove('opacity-100', 'scale-100');
+            modalContainer.classList.add('opacity-0', 'scale-95');
+            
+            // 动画完成后隐藏
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }, 300);
         }
 
         // 加载文章数据并初始化分页
         document.addEventListener('DOMContentLoaded', async () => {
             const basePath = 'resources/essays/articles/'; // 文章存放目录
             const maxFiles = 50;
+            const loadingState = document.getElementById('loading-state');
+            const emptyState = document.getElementById('empty-state');
+            const articleList = document.getElementById('article-list');
 
-            // 循环加载文件
-            for (let i = 1; i <= maxFiles; i++) {
-                const fileName = `file${i}.txt`;
-                try {
-                    const response = await fetch(`${basePath}${fileName}`);
-                    if (!response.ok) throw new Error('文件不存在');
-                    
-                    const content = await response.text();
-                    const lines = content.split('\n').filter(line => line.trim() !== '');
+            try {
+                // 循环加载文件
+                for (let i = 1; i <= maxFiles; i++) {
+                    const fileName = `file${i}.txt`;
+                    try {
+                        const response = await fetch(`${basePath}${fileName}`);
+                        if (!response.ok) throw new Error('文件不存在');
+                        
+                        const content = await response.text();
+                        const lines = content.split('\n').filter(line => line.trim() !== '');
 
-                    // 提取文章信息
-                    const title = lines[0] || '无标题';
-                    const author = lines[1] || '未知作者';
-                    const period = lines[2] || '未知时期';
-                    const fullContent = lines.slice(3).join('\n');
-                    const preview = lines.slice(3).join(' ').substring(0, 60) + '...';
+                        // 提取文章信息
+                        const title = lines[0] || '无标题';
+                        const author = lines[1] || '未知作者';
+                        const period = lines[2] || '未知时期';
+                        const fullContent = lines.slice(3).join('\n');
+                        const preview = lines.slice(3).join(' ').substring(0, 60) + '...';
 
-                    // 将文章数据存入数组（供分页使用）
-                    articles.push({ title, author, period, content: fullContent, preview });
+                        // 将文章数据存入数组（供分页使用）
+                        articles.push({ title, author, period, content: fullContent, preview });
 
-                } catch (error) {
-                    if (i === 1) break; // 第一个文件就出错，停止加载
-                    continue; // 其他文件出错，继续加载下一个
+                    } catch (error) {
+                        if (i === 1) break; // 第一个文件就出错，停止加载
+                        continue; // 其他文件出错，继续加载下一个
+                    }
                 }
-            }
 
-            // 初始化渲染（加载完成后显示第一页）
-            renderArticles(currentPage);
-            updatePagination();
+                // 隐藏加载状态
+                loadingState.classList.add('hidden');
+
+                // 处理无数据情况
+                if (articles.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                // 显示文章列表
+                articleList.classList.remove('hidden');
+
+                // 初始化渲染（加载完成后显示第一页）
+                renderArticles(currentPage);
+                updatePagination();
+
+            } catch (error) {
+                console.error('加载文章出错:', error);
+                loadingState.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.innerHTML = `
+                    <div class="inline-block p-4 rounded-full bg-red-50 mb-4">
+                        <i class="fa fa-exclamation-triangle text-3xl text-red-400"></i>
+                    </div>
+                    <p class="text-gray-600 text-lg">加载失败</p>
+                    <p class="text-gray-400 mt-2">无法加载文章，请稍后重试</p>
+                    <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-all">
+                        重试
+                    </button>
+                `;
+            }
 
             // 移动端菜单切换
             document.getElementById('mobile-menu-button').addEventListener('click', () => {
                 document.getElementById('mobile-menu').classList.toggle('hidden');
+            });
+
+            // 关闭模态框事件
+            document.getElementById('modalClose').addEventListener('click', closeModal);
+
+            // 点击模态框背景关闭
+            document.getElementById('fullContentModal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('fullContentModal')) {
+                    closeModal();
+                }
             });
 
             // 使用事件委托处理阅读全文按钮点击事件
@@ -374,34 +517,41 @@
                     showFullContent(content, title);
                 }
             });
-        });
 
-        // 显示全文模态框
-        function showFullContent(content, title) {
-            const modal = document.getElementById('fullContentModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalContent = document.getElementById('modalContent');
-            
-            if (content && title) {
-                modalTitle.textContent = title;
-                modalContent.textContent = content;
-                modal.classList.remove('hidden');
-            } else {
-                alert('无有效文章内容');
-            }
-        }
-
-        // 关闭模态框
-        document.getElementById('modalClose').addEventListener('click', () => {
-            document.getElementById('fullContentModal').classList.add('hidden');
-        });
-
-        // 点击模态框背景关闭
-        document.getElementById('fullContentModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('fullContentModal')) {
-                document.getElementById('fullContentModal').classList.add('hidden');
-            }
+            // 导航栏滚动效果
+            window.addEventListener('scroll', function() {
+                const navbar = document.getElementById('navbar');
+                if (window.scrollY > 50) {
+                    navbar.classList.add('bg-primary', 'shadow-md');
+                    navbar.classList.remove('bg-primary/90');
+                } else {
+                    navbar.classList.remove('bg-primary', 'shadow-md');
+                    navbar.classList.add('bg-primary/90');
+                }
+            });
         });
     </script>
-  </body>
+    
+    <style>
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+    </style>
+</body>
 </html>
