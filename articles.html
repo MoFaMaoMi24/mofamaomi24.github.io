@@ -27,7 +27,8 @@
                     animation: {
                         'fade-in': 'fadeIn 0.5s ease-in-out',
                         'slide-up': 'slideUp 0.5s ease-out',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 3s linear infinite'
                     },
                     keyframes: {
                         fadeIn: {
@@ -122,10 +123,19 @@
     <!-- 文章列表 -->
     <section class="py-16 bg-white">
         <div class="container mx-auto px-4">
-            <div id="article-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12"></div>
+            <!-- 文章加载状态 -->
+            <div id="loading-articles" class="col-span-full text-center py-20">
+                <div class="inline-block p-4 rounded-full bg-primary/10 mb-4">
+                    <i class="fa fa-book text-3xl text-primary animate-spin-slow"></i>
+                </div>
+                <p class="text-gray-600 text-lg">正在加载精选文章...</p>
+                <p class="text-gray-400 mt-2">请稍候，精彩内容即将呈现</p>
+            </div>
+            
+            <div id="article-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12 hidden"></div>
             
             <!-- 分页控件 -->
-            <div id="pagination" class="flex justify-center items-center space-x-2 mt-8">
+            <div id="pagination" class="flex justify-center items-center space-x-2 mt-8 hidden">
                 <button id="prev-page" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="fa fa-chevron-left"></i> 上一页
                 </button>
@@ -134,13 +144,27 @@
                     下一页 <i class="fa fa-chevron-right"></i>
                 </button>
             </div>
+            
+            <!-- 无文章状态 -->
+            <div id="no-articles" class="col-span-full text-center py-20 hidden">
+                <div class="inline-block p-4 rounded-full bg-gray-100 mb-4">
+                    <i class="fa fa-file-text-o text-3xl text-gray-400"></i>
+                </div>
+                <p class="text-gray-600 text-lg">暂无精选文章</p>
+                <p class="text-gray-400 mt-2">我们正在努力创作中，敬请期待</p>
+            </div>
         </div>
     </section>
 
     <!-- 文章详情模态框 -->
     <div id="fullContentModal" class="fixed inset-0 bg-black/50 z-50 hidden justify-center items-center">
-        <div class="bg-white rounded-lg shadow-lg max-w-4xl w-11/12 p-6 relative mx-auto my-8">
-            <h3 id="modalTitle" class="text-xl font-semibold mb-4 text-primary"></h3>
+        <div class="bg-white rounded-lg shadow-lg max-w-4xl w-11/12 p-6 relative mx-auto my-8 transform transition-all duration-300 opacity-0 scale-95" id="modal-container">
+            <!-- 阅读进度条 -->
+            <div id="reading-progress" class="absolute top-0 left-0 right-0 h-1 bg-primary/30">
+                <div id="progress-bar" class="h-full bg-primary w-0 transition-all duration-100"></div>
+            </div>
+            
+            <h3 id="modalTitle" class="text-xl font-semibold mb-4 text-primary mt-2"></h3>
             <div id="modalContent" class="text-gray-600 mb-6 max-h-[70vh] overflow-y-auto whitespace-pre-wrap leading-relaxed"></div>
             <button onclick="closeModal()" class="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:opacity-90 transition-all duration-300">
                 退出阅读
@@ -230,6 +254,7 @@
         let currentPage = 1; // 当前页码
         const articlesPerPage = 6; // 每页显示的文章数量
         let totalPages = 1; // 总页数
+        let currentModalScrollTop = 0; // 当前模态框滚动位置
         
         // 导航栏滚动效果
         window.addEventListener('scroll', function() {
@@ -272,22 +297,69 @@
         // 模态框控制函数
         function showFullArticle(title, content) {
             const modal = document.getElementById('fullContentModal');
+            const modalContainer = document.getElementById('modal-container');
+            const progressBar = document.getElementById('progress-bar');
+            
+            // 重置滚动进度
+            progressBar.style.width = '0%';
+            
+            // 设置内容
             document.getElementById('modalTitle').textContent = title;
             
-            // 修复符号转义问题 - 使用文本节点而非innerHTML
+            // 清空并设置内容
             const modalContent = document.getElementById('modalContent');
-            modalContent.textContent = ''; // 清空现有内容
+            modalContent.textContent = '';
             modalContent.appendChild(document.createTextNode(content));
             
+            // 显示模态框并添加动画
             modal.classList.remove('hidden');
-            modal.style.display = 'flex'; // 确保模态框以flex布局显示
+            modal.style.display = 'flex';
+            
+            // 触发重排后添加动画类
+            setTimeout(() => {
+                modalContainer.classList.remove('opacity-0', 'scale-95');
+                modalContainer.classList.add('opacity-100', 'scale-100');
+            }, 10);
+            
+            // 重置滚动位置
+            modalContent.scrollTop = 0;
+            
+            // 添加滚动进度监听
+            modalContent.addEventListener('scroll', updateReadingProgress);
+        }
+        
+        // 更新阅读进度
+        function updateReadingProgress() {
+            const modalContent = document.getElementById('modalContent');
+            const progressBar = document.getElementById('progress-bar');
+            
+            // 计算滚动百分比
+            const scrollTop = modalContent.scrollTop;
+            const scrollHeight = modalContent.scrollHeight - modalContent.clientHeight;
+            const scrollPercent = (scrollTop / scrollHeight) * 100;
+            
+            // 更新进度条
+            progressBar.style.width = `${scrollPercent}%`;
         }
         
         // 关闭模态框函数
         function closeModal() {
             const modal = document.getElementById('fullContentModal');
-            modal.classList.add('hidden');
-            modal.style.display = 'none';
+            const modalContainer = document.getElementById('modal-container');
+            const modalContent = document.getElementById('modalContent');
+            
+            // 移除滚动监听
+            modalContent.removeEventListener('scroll', updateReadingProgress);
+            
+            // 添加关闭动画
+            modalContainer.classList.remove('opacity-100', 'scale-100');
+            modalContainer.classList.add('opacity-0', 'scale-95');
+            
+            // 动画完成后隐藏
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }, 300);
         }
         
         // 点击模态框外部区域关闭模态框
@@ -308,28 +380,37 @@
             const currentArticles = allArticles.slice(startIndex, endIndex);
             
             // 渲染文章
-            currentArticles.forEach(article => {
-                const card = document.createElement('div');
-                card.className = 'bg-neutral rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group p-6';
-                card.innerHTML = `
-                    <h3 class="text-xl font-bold mb-2 text-primary group-hover:text-secondary transition-colors duration-300">${article.title}</h3>
-                    <div class="flex items-center text-gray-500 text-sm mb-4">
-                        <span><i class="fa fa-user mr-1"></i>${article.author}</span>
-                        <span class="mx-2">•</span>
-                        <span><i class="fa fa-clock-o mr-1"></i>${article.period}</span>
-                    </div>
-                    <p class="text-gray-600 mb-4 line-clamp-3">${article.preview}</p>
-                    <button class="read-more-btn text-accent hover:text-primary transition-colors duration-300 font-medium">
-                        阅读全文 <i class="fa fa-arrow-right ml-1"></i>
-                    </button>
-                `;
-                
-                // 添加点击事件
-                card.querySelector('.read-more-btn').addEventListener('click', () => {
-                    showFullArticle(article.title, article.content);
-                });
-                
-                articleList.appendChild(card);
+            currentArticles.forEach((article, index) => {
+                // 添加延迟动画，使卡片依次出现
+                setTimeout(() => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-neutral rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group p-6 opacity-0 transform translate-y-4';
+                    card.innerHTML = `
+                        <h3 class="text-xl font-bold mb-2 text-primary group-hover:text-secondary transition-colors duration-300">${article.title}</h3>
+                        <div class="flex items-center text-gray-500 text-sm mb-4">
+                            <span><i class="fa fa-user mr-1"></i>${article.author}</span>
+                            <span class="mx-2">•</span>
+                            <span><i class="fa fa-clock-o mr-1"></i>${article.period}</span>
+                        </div>
+                        <p class="text-gray-600 mb-4 line-clamp-3">${article.preview}</p>
+                        <button class="read-more-btn text-accent hover:text-primary transition-colors duration-300 font-medium">
+                            阅读全文 <i class="fa fa-arrow-right ml-1"></i>
+                        </button>
+                    `;
+                    
+                    // 添加点击事件
+                    card.querySelector('.read-more-btn').addEventListener('click', () => {
+                        showFullArticle(article.title, article.content);
+                    });
+                    
+                    articleList.appendChild(card);
+                    
+                    // 触发动画
+                    setTimeout(() => {
+                        card.classList.remove('opacity-0', 'translate-y-4');
+                    }, 50);
+                    
+                }, index * 100); // 每个卡片延迟100ms出现
             });
             
             // 更新分页控件状态
@@ -352,7 +433,7 @@
             // 生成页码按钮
             for (let i = 1; i <= totalPages; i++) {
                 const pageBtn = document.createElement('button');
-                pageBtn.className = `px-3 py-1 rounded ${i === currentPage ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
+                pageBtn.className = `px-3 py-1 rounded transition-all ${i === currentPage ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
                 pageBtn.textContent = i;
                 
                 pageBtn.addEventListener('click', () => {
@@ -386,59 +467,87 @@
         // 加载所有文章
         document.addEventListener('DOMContentLoaded', async () => {
             const basePath = 'resources/articles/articles/';
+            const loadingIndicator = document.getElementById('loading-articles');
+            const articleList = document.getElementById('article-list');
+            const pagination = document.getElementById('pagination');
+            const noArticles = document.getElementById('no-articles');
             
-            // 加载所有文章
-            for (let i = 1; ; i++) {
-                const fileName = `file${i}.txt`;
-                try {
-                    const response = await fetch(`${basePath}${fileName}`);
-                    if (!response.ok) throw new Error('文件不存在');
-                    
-                    // 使用text()方法获取原始文本，避免解析问题
-                    const content = await response.text();
-                    const lines = content.split('\n').filter(line => line.trim() !== '');
-                    
-                    // 提取文章信息
-                    const title = lines[0] || '无标题';
-                    const author = lines[1] || '未知作者';
-                    const period = lines[2] || '未知时期';
-                    const fullContent = lines.slice(3).join('\n');
-                    const preview = fullContent.substring(0, 100) + '...';
-                    
-                    // 添加到文章数组
-                    allArticles.push({
-                        title,
-                        author,
-                        period,
-                        content: fullContent,
-                        preview
-                    });
-                } catch {
-                    break; // 文件不存在，停止加载
+            try {
+                // 尝试加载文章
+                for (let i = 1; ; i++) {
+                    const fileName = `file${i}.txt`;
+                    try {
+                        const response = await fetch(`${basePath}${fileName}`);
+                        if (!response.ok) throw new Error('文件不存在');
+                        
+                        // 使用text()方法获取原始文本
+                        const content = await response.text();
+                        const lines = content.split('\n').filter(line => line.trim() !== '');
+                        
+                        // 提取文章信息
+                        const title = lines[0] || '无标题';
+                        const author = lines[1] || '未知作者';
+                        const period = lines[2] || '未知时期';
+                        const fullContent = lines.slice(3).join('\n');
+                        const preview = fullContent.substring(0, 100) + '...';
+                        
+                        // 添加到文章数组
+                        allArticles.push({
+                            title,
+                            author,
+                            period,
+                            content: fullContent,
+                            preview
+                        });
+                    } catch {
+                        break; // 文件不存在，停止加载
+                    }
                 }
+                
+                // 隐藏加载状态
+                loadingIndicator.classList.add('hidden');
+                
+                // 根据是否有文章显示不同内容
+                if (allArticles.length === 0) {
+                    noArticles.classList.remove('hidden');
+                } else {
+                    // 计算总页数
+                    totalPages = Math.ceil(allArticles.length / articlesPerPage);
+                    
+                    // 显示文章列表和分页
+                    articleList.classList.remove('hidden');
+                    pagination.classList.remove('hidden');
+                    
+                    // 渲染第一页
+                    renderCurrentPage();
+                }
+                
+            } catch (error) {
+                console.error('加载文章出错:', error);
+                loadingIndicator.classList.add('hidden');
+                noArticles.classList.remove('hidden');
+                noArticles.innerHTML = `
+                    <div class="inline-block p-4 rounded-full bg-red-50 mb-4">
+                        <i class="fa fa-exclamation-triangle text-3xl text-red-400"></i>
+                    </div>
+                    <p class="text-gray-600 text-lg">加载失败</p>
+                    <p class="text-gray-400 mt-2">无法加载文章，请稍后重试</p>
+                    <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">
+                        重试
+                    </button>
+                `;
             }
-            
-            // 计算总页数
-            totalPages = Math.ceil(allArticles.length / articlesPerPage);
-            
-            // 渲染第一页
-            renderCurrentPage();
         });
     </script>
     
     <style>
         /* 模态框样式优化 */
         #fullContentModal {
-            transition: opacity 0.3s ease;
+            opacity: 0;
         }
         
-        #fullContentModal .bg-white {
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-        }
-        
-        #fullContentModal:not(.hidden) .bg-white {
-            transform: translateY(0);
+        #fullContentModal:not(.hidden) {
+            opacity: 1;
         }
         
         /* 文章卡片悬停效果 */
