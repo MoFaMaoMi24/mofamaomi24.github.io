@@ -27,7 +27,10 @@
                     animation: {
                         'fade-in': 'fadeIn 0.5s ease-in-out',
                         'slide-up': 'slideUp 0.5s ease-out',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in-delay': 'fadeIn 0.5s ease-in-out 0.3s forwards',
+                        'slide-up-delay': 'slideUp 0.5s ease-out 0.6s forwards',
+                        'slide-up-delay-2': 'slideUp 0.5s ease-out 0.9s forwards'
                     },
                     keyframes: {
                         fadeIn: {
@@ -60,12 +63,37 @@
             .backdrop-blur-sm {
                 backdrop-filter: blur(4px);
             }
+            .typing-cursor {
+                border-right: 2px solid currentColor;
+                animation: cursor-blink 1s step-end infinite;
+            }
+            @keyframes cursor-blink {
+                from, to { border-color: transparent }
+                50% { border-color: currentColor }
+            }
+            .section-fade-in {
+                opacity: 0;
+                transform: translateY(20px);
+                transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+            }
+            .section-visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 <body class="font-inter bg-neutral text-dark min-h-screen flex flex-col">
+    <!-- 页面加载动画 -->
+    <div id="page-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-primary">
+        <div class="text-center">
+            <div class="w-16 h-16 border-4 border-secondary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-white text-xl font-medium">梦岸一方加载中...</p>
+        </div>
+    </div>
+
     <!-- 导航栏 -->
-    <header id="navbar" class="fixed w-full z-50 transition-all duration-300">
+    <header id="navbar" class="fixed w-full z-40 transition-all duration-300 opacity-0">
         <nav class="bg-primary/90 backdrop-blur-sm text-white">
             <div class="container mx-auto px-4 py-3 md:py-4">
                 <div class="flex justify-between items-center">
@@ -108,18 +136,25 @@
     <!-- 英雄区域 -->
     <section class="relative h-screen flex items-center justify-center overflow-hidden">
         <div class="absolute inset-0 z-0">
-            <img src="https://picsum.photos/seed/dreamshore/1920/1080" alt="梦岸一方背景" class="w-full h-full object-cover">
+            <img src="https://picsum.photos/seed/dreamshore/1920/1080" alt="梦岸一方背景" class="w-full h-full object-cover opacity-0" id="hero-image">
             <div class="absolute inset-0 bg-primary/60"></div>
         </div>
         
         <div class="container mx-auto px-4 z-10 text-center">
-            <h1 class="text-[clamp(2.5rem,5vw,4.5rem)] font-bold mb-6 text-white animate-slide-up text-shadow">
+            <h1 class="text-[clamp(2.5rem,5vw,4.5rem)] font-bold mb-4 text-white animate-slide-up text-shadow">
                 梦岸一方
             </h1>
-            <p class="text-[clamp(1.2rem,3vw,1.75rem)] text-gray-100 max-w-3xl mx-auto mb-10 animate-slide-up">
-                以热爱探索一切
+            
+            <!-- 打字机效果副标题容器 -->
+            <div class="h-[clamp(1.2rem,3vw,1.75rem)] mb-6 flex justify-center items-center">
+                <p id="typing-text" class="text-[clamp(1.2rem,3vw,1.75rem)] text-gray-100 max-w-3xl mx-auto font-medium typing-cursor"></p>
+            </div>
+            
+            <p class="text-[clamp(1rem,2vw,1.25rem)] text-gray-200 max-w-2xl mx-auto mb-10 opacity-0" id="static-subtitle">
+                探索思想的彼岸，发现灵感的源泉
             </p>
-            <div class="flex flex-col sm:flex-row justify-center gap-4 animate-slide-up">
+            
+            <div class="flex flex-col sm:flex-row justify-center gap-4 animate-slide-up-delay-2 opacity-0" id="action-buttons">
                 <a href="#features" class="bg-secondary hover:bg-secondary/90 text-primary font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
                     探索内容
                 </a>
@@ -129,7 +164,7 @@
             </div>
         </div>
         
-        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce opacity-0" id="scroll-indicator">
             <a href="#features" class="text-white text-3xl">
                 <i class="fa fa-angle-down"></i>
             </a>
@@ -137,7 +172,7 @@
     </section>
 
     <!-- 网站特色 -->
-    <section id="features" class="py-20 bg-white">
+    <section id="features" class="py-20 bg-white section-fade-in">
         <div class="container mx-auto px-4">
             <div class="text-center mb-16">
                 <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold text-primary mb-4">梦岸一方特色</h2>
@@ -146,7 +181,7 @@
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <!-- 特色1 -->
-                <div class="bg-neutral rounded-xl p-8 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+                <div class="bg-neutral rounded-xl p-8 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 feature-card">
                     <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
                         <i class="fa fa-pencil text-2xl text-primary"></i>
                     </div>
@@ -158,7 +193,7 @@
                 </div>
                 
                 <!-- 特色2 -->
-                <div class="bg-neutral rounded-xl p-8 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+                <div class="bg-neutral rounded-xl p-8 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 feature-card">
                     <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
                         <i class="fa fa-book text-2xl text-primary"></i>
                     </div>
@@ -170,7 +205,7 @@
                 </div>
                 
                 <!-- 特色3 -->
-                <div class="bg-neutral rounded-xl p-8 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+                <div class="bg-neutral rounded-xl p-8 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 feature-card">
                     <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
                         <i class="fa fa-picture-o text-2xl text-primary"></i>
                     </div>
@@ -185,7 +220,7 @@
     </section>
 
     <!-- 模块介绍 -->
-    <section id="modules" class="py-20 bg-gradient-to-br from-primary to-dark text-white">
+    <section id="modules" class="py-20 bg-gradient-to-br from-primary to-dark text-white section-fade-in">
         <div class="container mx-auto px-4">
             <div class="text-center mb-16">
                 <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold mb-4">探索我们的内容模块</h2>
@@ -194,7 +229,7 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <!-- 模块1 -->
-                <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300">
+                <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300 module-card">
                     <div class="p-8">
                         <div class="flex items-center mb-6">
                             <div class="w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center mr-4">
@@ -224,7 +259,7 @@
                 </div>
                 
                 <!-- 模块2 -->
-                <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300">
+                <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300 module-card">
                     <div class="p-8">
                         <div class="flex items-center mb-6">
                             <div class="w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center mr-4">
@@ -254,7 +289,7 @@
                 </div>
                 
                 <!-- 模块3 -->
-                <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300">
+                <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300 module-card">
                     <div class="p-8">
                         <div class="flex items-center mb-6">
                             <div class="w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center mr-4">
@@ -284,7 +319,7 @@
                 </div>
                 
                 <!-- 模块4 -->
-                <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300">
+                <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-300 module-card">
                     <div class="p-8">
                         <div class="flex items-center mb-6">
                             <div class="w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center mr-4">
@@ -317,7 +352,7 @@
     </section>
 
     <!-- 内容声明 -->
-    <section class="py-20 bg-white">
+    <section class="py-20 bg-white section-fade-in">
         <div class="container mx-auto px-4 text-center">
             <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold text-primary mb-4">内容声明</h2>
             <p class="text-gray-600 max-w-2xl mx-auto text-lg">本网站以娱乐性质创立，并未获得备案，未用作任何违法用途，尊重作者文章著作权。
@@ -327,7 +362,7 @@
     </section>
 
     <!-- 页脚 -->
-    <footer class="bg-primary text-white pt-16 pb-8">
+    <footer class="bg-primary text-white pt-16 pb-8 section-fade-in">
         <div class="container mx-auto px-4">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
                 <div>
@@ -403,47 +438,192 @@
     </footer>
 
     <script>
-        // 导航栏滚动效果
-        window.addEventListener('scroll', function() {
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 页面加载动画
+            const pageLoader = document.getElementById('page-loader');
             const navbar = document.getElementById('navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('bg-primary', 'shadow-md');
-                navbar.classList.remove('bg-primary/90');
-            } else {
-                navbar.classList.remove('bg-primary', 'shadow-md');
-                navbar.classList.add('bg-primary/90');
-            }
-        });
-        
-        // 移动端菜单切换
-        document.getElementById('mobile-menu-button').addEventListener('click', function() {
-            const mobileMenu = document.getElementById('mobile-menu');
-            mobileMenu.classList.toggle('hidden');
-        });
-        
-        // 平滑滚动
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
+            const heroImage = document.getElementById('hero-image');
+            const staticSubtitle = document.getElementById('static-subtitle');
+            const actionButtons = document.getElementById('action-buttons');
+            const scrollIndicator = document.getElementById('scroll-indicator');
+            
+            // 模拟页面加载过程
+            setTimeout(() => {
+                // 隐藏加载动画
+                pageLoader.classList.add('opacity-0', 'pointer-events-none');
+                pageLoader.style.transition = 'opacity 0.5s ease-out';
                 
-                const targetId = this.getAttribute('href');
-                const targetElement = document.querySelector(targetId);
-                
-                if (targetElement) {
-                    window.scrollTo({
-                        top: targetElement.offsetTop - 80,
-                        behavior: 'smooth'
-                    });
+                // 显示导航栏
+                setTimeout(() => {
+                    navbar.style.transition = 'opacity 0.5s ease-out';
+                    navbar.classList.add('opacity-100');
                     
-                    // 关闭移动菜单
-                    document.getElementById('mobile-menu').classList.add('hidden');
+                    // 淡入显示英雄区域图片
+                    heroImage.style.transition = 'opacity 1.5s ease-out';
+                    heroImage.classList.add('opacity-100');
+                    
+                    // 显示副标题和按钮
+                    setTimeout(() => {
+                        staticSubtitle.style.transition = 'opacity 0.8s ease-out 0.3s';
+                        staticSubtitle.classList.add('opacity-100');
+                        
+                        actionButtons.style.transition = 'opacity 0.8s ease-out 0.6s';
+                        actionButtons.classList.add('opacity-100');
+                        
+                        scrollIndicator.style.transition = 'opacity 0.8s ease-out 0.9s';
+                        scrollIndicator.classList.add('opacity-100');
+                    }, 300);
+                }, 300);
+            }, 1000);
+            
+            // 打字机效果实现
+            const texts = [
+                "欢迎来到梦岸一方",
+                "探索思想的彼岸",
+                "发现灵感的源泉",
+                "分享生活的点滴感悟",
+                "记录创意的火花"
+            ];
+            
+            let textIndex = 0;
+            let charIndex = 0;
+            let isDeleting = false;
+            const typingSpeed = 150;
+            const deletingSpeed = 75;
+            const delayBetweenTexts = 1500;
+            const typingElement = document.getElementById('typing-text');
+            
+            function typeText() {
+                const currentText = texts[textIndex];
+                
+                if (isDeleting) {
+                    // 删除文字
+                    typingElement.textContent = currentText.substring(0, charIndex - 1);
+                    charIndex--;
+                } else {
+                    // 输入文字
+                    typingElement.textContent = currentText.substring(0, charIndex + 1);
+                    charIndex++;
+                }
+                
+                // 控制打字速度
+                let typeSpeed = isDeleting ? deletingSpeed : typingSpeed;
+                
+                // 如果正在输入且完成当前文本
+                if (!isDeleting && charIndex === currentText.length) {
+                    isDeleting = true;
+                    typeSpeed = delayBetweenTexts; // 停留一段时间
+                } else if (isDeleting && charIndex === 0) {
+                    isDeleting = false;
+                    textIndex = (textIndex + 1) % texts.length; // 切换到下一个文本
+                    typeSpeed = 500; // 切换文本前的停顿
+                }
+                
+                setTimeout(typeText, typeSpeed);
+            }
+            
+            // 开始打字效果
+            setTimeout(typeText, 1500);
+            
+            // 移动端菜单切换
+            document.getElementById('mobile-menu-button').addEventListener('click', function() {
+                const mobileMenu = document.getElementById('mobile-menu');
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            // 平滑滚动
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                        
+                        // 关闭移动菜单
+                        document.getElementById('mobile-menu').classList.add('hidden');
+                    }
+                });
+            });
+            
+            // 滚动显示动画
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('section-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+            
+            // 监听所有带section-fade-in类的元素
+            document.querySelectorAll('.section-fade-in').forEach(section => {
+                observer.observe(section);
+            });
+            
+            // 为特色卡片添加顺序显示动画
+            const featureCards = document.querySelectorAll('.feature-card');
+            featureCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = `opacity 0.6s ease-out ${0.1 + index * 0.2}s, transform 0.6s ease-out ${0.1 + index * 0.2}s`;
+                
+                const cardObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                            cardObserver.unobserve(card);
+                        }
+                    });
+                }, observerOptions);
+                
+                cardObserver.observe(card);
+            });
+            
+            // 为模块卡片添加顺序显示动画
+            const moduleCards = document.querySelectorAll('.module-card');
+            moduleCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = `opacity 0.6s ease-out ${0.1 + index * 0.2}s, transform 0.6s ease-out ${0.1 + index * 0.2}s`;
+                
+                const cardObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                            cardObserver.unobserve(card);
+                        }
+                    });
+                }, observerOptions);
+                
+                cardObserver.observe(card);
+            });
+            
+            // 导航栏滚动效果
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('bg-primary', 'shadow-md');
+                    navbar.classList.remove('bg-primary/90');
+                } else {
+                    navbar.classList.remove('bg-primary', 'shadow-md');
+                    navbar.classList.add('bg-primary/90');
                 }
             });
         });
     </script>
-</body>
-</html>
-
-
 </body>
 </html>
