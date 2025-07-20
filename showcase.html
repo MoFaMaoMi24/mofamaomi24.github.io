@@ -146,13 +146,12 @@
         // 配置PDF.js工作器路径
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     
-        // 手动指定需要展示的PDF文件（在这里修改为你的两个PDF文件名）
+        // 手动指定需要展示的PDF文件及对应预览图片（需将图片放在resources/showcase/pictures目录下）
         const pdfFiles = [
-            { path: '梦岸一方 - 2024合订本.pdf' },  // 第一个PDF文件名
-
-            { path: '梦岸一方 - 2025第一季度.pdf' }   // 第二个PDF文件名
+            { path: '梦岸一方 - 2024合订本.pdf', preview: 'resources/showcase/pictures/梦岸一方 - 2024合订本.png' },  // 第一个PDF及预览图
+            { path: '梦岸一方 - 2025第一季度.pdf', preview: 'resources/showcase/pictures/梦岸一方 - 2025第一季度.png' }   // 第二个PDF及预览图
         ];
-    
+
         // 加载并展示PDF文件
         async function loadPdfShowcase() {
             const gridContainer = document.getElementById('pdf-grid');
@@ -185,10 +184,12 @@
                 loadingIndicator.innerHTML = '<i class="fa fa-spinner fa-spin text-3xl text-primary"></i>';
                 previewContainer.appendChild(loadingIndicator);
     
-                // 创建Canvas用于PDF预览
-                const canvas = document.createElement('canvas');
-                canvas.className = 'w-full h-full object-cover';
-                previewContainer.appendChild(canvas);
+                // 创建图片用于预览
+                const img = document.createElement('img');
+                img.className = 'w-full h-full object-cover';
+                img.src = pdf.preview; // 使用指定图片路径
+                img.alt = title;
+                previewContainer.appendChild(img);
     
                 // 创建PDF标题容器
                 const titleContainer = document.createElement('div');
@@ -207,41 +208,15 @@
                 card.appendChild(titleContainer);
                 gridContainer.appendChild(card);
     
-                // 使用PDF.js渲染第一页作为预览
-                try {
-                    pdfjsLib.getDocument({ url: `resources/showcase/${pdf.path}` }).promise
-                        .then(pdfDoc => pdfDoc.getPage(1))
-                        .then(page => {
-                            const viewport = page.getViewport({ scale: 0.5 });
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
-                            
-                            const renderContext = {
-                                canvasContext: canvas.getContext('2d'),
-                                viewport: viewport
-                            };
-                            
-                            return page.render(renderContext).promise;
-                        })
-                        .then(() => {
-                            // 预览加载完成后隐藏加载指示器
-                            loadingIndicator.remove();
-                        })
-                        .catch(error => {
-                            console.error('PDF预览渲染失败:', error);
-                            previewContainer.innerHTML = `
-                                <div class="w-full h-full flex items-center justify-center">
-                                    <i class="fa fa-file-pdf-o text-5xl text-red-500"></i>
-                                    <p class="mt-2 text-red-500">预览加载失败</p>
-                                </div>
-                            `;
-                        });
-                } catch (error) {
-                    console.error('PDF预览加载失败:', error);
+                // 图片加载完成后隐藏加载指示器
+                img.onload = () => loadingIndicator.remove();
+                // 图片加载失败处理
+                img.onerror = () => {
+                    console.error('图片预览加载失败:', pdf.preview);
                     previewContainer.innerHTML = `
                         <div class="w-full h-full flex items-center justify-center">
-                            <i class="fa fa-file-pdf-o text-5xl text-red-500"></i>
-                            <p class="mt-2 text-red-500">预览加载失败</p>
+                            <i class="fa fa-file-image-o text-5xl text-red-500"></i>
+                            <p class="mt-2 text-red-500">预览图片加载失败</p>
                         </div>
                     `;
                 }
